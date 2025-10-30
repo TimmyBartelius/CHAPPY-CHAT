@@ -1,7 +1,6 @@
 import express from 'express';
 import type { Request, Response, Router } from 'express';
-import { GetCommand, ScanCommand, PutCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
-import type {GetCommandOutput, ScanCommandOutput} from "@aws-sdk/lib-dynamodb"
+import { GetCommand, ScanCommand, PutCommand, DeleteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import type { Users, Guest } from "../data/types.js";
 import { db } from "../data/dynamoDb.js";
 import {v4 as uuid} from 'uuid';
@@ -27,7 +26,7 @@ const myTable: string = 'CHAPPY';
 // ----- GET alla Admin-users -----
 router.get('/admin', async (req: Request, res: Response) => {
   try {
-    const result = await db.send(new ScanCommand({
+    const result = await db.send(new QueryCommand({
       TableName: myTable,
       FilterExpression: "begins_with(#pk, :prefix) AND accessLevel = :Admin",
       ExpressionAttributeNames: {
@@ -51,7 +50,7 @@ router.get('/admin', async (req: Request, res: Response) => {
 // ----- GET alla Users -----
 router.get('/users', async (req: Request, res: Response) => {
   try {
-    const result = await db.send(new ScanCommand({
+    const result = await db.send(new QueryCommand({
       TableName: myTable,
       FilterExpression: "begins_with(#pk, :prefix) AND accessLevel = :User",
       ExpressionAttributeNames: {
@@ -75,7 +74,7 @@ router.get('/users', async (req: Request, res: Response) => {
 // ----- GET hämta alla Gäster -----
 router.get('/guests', async (req: Request, res: Response) => {
   try {
-    const result = await db.send(new ScanCommand({
+    const result = await db.send(new QueryCommand({
       TableName: myTable,
       FilterExpression: "begins_with(#pk, :prefix) AND accessLevel = :Guest",
       ExpressionAttributeNames: {
@@ -97,7 +96,7 @@ router.get('/guests', async (req: Request, res: Response) => {
 });
 
 // ----- POST skapa Gäst -----
-router.post('/users/guest', async (req, res) => {
+router.post('/users/guest', async (req: Request, res: Response) => {
   const userId = `USER#${uuid()}`;
   const guest: Guest = {
     PK: userId,
