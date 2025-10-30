@@ -12,3 +12,11 @@ export interface Channels{
     isLocked: boolean,
     name: string
 }
+
+export interface Guest{
+    PK: string,
+    SK: string,
+    accessLevel: string,
+    passwordHash: string,
+    username: string
+}

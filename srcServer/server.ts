@@ -12,13 +12,10 @@ const logger: RequestHandler = (req, res, next) => {
 const port: number = Number(process.env.PORT)
 const app = express()
 
-//Middleware
 app.use("/", logger)
 app.use('/', cors())
 app.use('/', express.json())
-
-//Resurser
-app.use( usersRouter)
+app.use( "/api", usersRouter)
 
 
 // GET /api/hello - Säg hej
