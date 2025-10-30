@@ -16,16 +16,14 @@ app.use("/", logger)
 app.use('/', cors())
 app.use('/', express.json())
 app.use( "/api", usersRouter)
+app.use(express.static('./dist/'))
 
 
 // GET /api/hello - Säg hej
 app.get("/api/hello", (req: Request, res: Response) => {
   res.json({ message: "Servern säger hej!" });
 });
-
-
-app.use(express.static('./dist/'))
-
+// Se vilken port som används
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`)
 })

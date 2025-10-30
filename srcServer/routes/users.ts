@@ -3,46 +3,36 @@ import type { Request, Response, Router } from 'express';
 import { GetCommand, ScanCommand, PutCommand, DeleteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import type { Users, Guest } from "../data/types.js";
 import { db } from "../data/dynamoDb.js";
-import {v4 as uuid} from 'uuid';
-import jwt from "jsonwebtoken"
-import bcrypt from "bcrypt"
+import { v4 as uuid } from 'uuid';
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET is not set in .env");
+} else {
+  console.log("JWT_SECRET loaded successfully!");
+}
+const JWT_SECRET = process.env.JWT_SECRET!;
 const router: Router = express.Router();
-
-// ----- Typning -----
-export interface GetResult<T> {
-  Item?: T;
-}
-
-interface ScanResult<T> {
-  Items?: T[];
-  Count?: number;
-}
 
 // ----- DynamoDB tabell -----
 const myTable: string = 'CHAPPY';
 
 // ----- GET alla Admin-users -----
-router.get('/admin', async (req: Request, res: Response) => {
+router.get('/users/admin', async (req: Request, res: Response) => {
   try {
     const result = await db.send(new QueryCommand({
       TableName: myTable,
-      FilterExpression: "begins_with(#pk, :prefix) AND accessLevel = :Admin",
-      ExpressionAttributeNames: {
-        "#pk": "PK"
-      },
-      ExpressionAttributeValues: {
-        ":prefix": "USER#",
-        ":Admin": "Admin"
-      }
+      IndexName: "accessLevel-index",
+      KeyConditionExpression: "#access = :Admin",
+      ExpressionAttributeNames: { "#access": "accessLevel" },
+      ExpressionAttributeValues: { ":Admin": "Admin" }
     }));
 
     const users = (result.Items || []).map(item => item as Users);
     res.send(users);
-
   } catch (err) {
-    console.error("Error scanning users:", err);
+    console.error("Error scanning admin users:", err);
     res.sendStatus(500);
   }
 });
@@ -50,52 +40,64 @@ router.get('/admin', async (req: Request, res: Response) => {
 // ----- GET alla Users -----
 router.get('/users', async (req: Request, res: Response) => {
   try {
-    const result = await db.send(new QueryCommand({
+    // FIX: Använder Scan med filter istället för username-index
+    const result = await db.send(new ScanCommand({
       TableName: myTable,
-      FilterExpression: "begins_with(#pk, :prefix) AND accessLevel = :User",
-      ExpressionAttributeNames: {
-        "#pk": "PK"
-      },
-      ExpressionAttributeValues: {
-        ":prefix": "USER#",
-        ":User": "User"
-      }
+      FilterExpression: "accessLevel = :User",
+      ExpressionAttributeValues: { ":User": "User" }
     }));
 
     const users = (result.Items || []).map(item => item as Users);
     res.send(users);
-
   } catch (err) {
     console.error("Error scanning users:", err);
     res.sendStatus(500);
   }
 });
 
-// ----- GET hämta alla Gäster -----
-router.get('/guests', async (req: Request, res: Response) => {
+// ----- GET alla Guests -----
+router.get('/users/guests', async (req: Request, res: Response) => {
   try {
     const result = await db.send(new QueryCommand({
       TableName: myTable,
-      FilterExpression: "begins_with(#pk, :prefix) AND accessLevel = :Guest",
-      ExpressionAttributeNames: {
-        "#pk": "PK"
-      },
-      ExpressionAttributeValues: {
-        ":prefix": "USER#",
-        ":Guest": "Guest"
-      }
+      IndexName: "accessLevel-index",
+      KeyConditionExpression: "#access = :Guest",
+      ExpressionAttributeNames: { "#access": "accessLevel" },
+      ExpressionAttributeValues: { ":Guest":"Guest" }
     }));
 
     const guests = (result.Items || []).map(item => item as Guest);
     res.send(guests);
-
   } catch (err) {
     console.error("Error scanning guests:", err);
     res.sendStatus(500);
   }
 });
 
-// ----- POST skapa Gäst -----
+// ----- GET alla Users/Admin/Guests -----
+router.get('/users/all', async (req: Request, res: Response) => {
+  try {
+    const result = await db.send(new ScanCommand({
+      TableName: myTable,
+      FilterExpression: "accessLevel IN (:User, :Admin, :Guest)",
+      ExpressionAttributeValues: {
+        ":User": "User",
+        ":Admin": "Admin",
+        ":Guest": "Guest"
+      }
+    }));
+
+    const users = (result.Items || []).map(item => item as Users | Guest);
+    res.status(200).json(users);
+
+  } catch (err) {
+    console.error("Error fetching all users:", err);
+    res.sendStatus(500);
+  }
+});
+
+
+// ----- POST skapa Guest -----
 router.post('/users/guest', async (req: Request, res: Response) => {
   const userId = `USER#${uuid()}`;
   const guest: Guest = {
@@ -103,59 +105,123 @@ router.post('/users/guest', async (req: Request, res: Response) => {
     SK: "METADATA",
     username: `Guest-${Math.floor(Math.random() * 1234)}`,
     accessLevel: "Guest",
-    passwordHash: "", // Gäster har inget lösenord
+    passwordHash: "", // Guest har inget lösenord
   };
 
-  await db.send(new PutCommand({
-    TableName: myTable,
-    Item: guest
-  }));
+  await db.send(new PutCommand({ TableName: myTable, Item: guest }));
 
   const token = jwt.sign(
     { userId, accessLevel: guest.accessLevel },
     JWT_SECRET,
-    { expiresIn: "7d"}
-);
+    { expiresIn: "7d" }
+  );
 
   res.send({ userId, username: guest.username, token });
 });
 
 // ----- POST skapa User -----
 router.post('/users/register', async (req: Request, res: Response) => {
-    try{
-        const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Username and password required!" });
 
-        if (!username || !password) {
-            return res.status(400).json({error: "Username and password required!"});
-        }
-        const userId = `USER#${uuid()}`;
-        const passwordHash = await bcrypt.hash(password, 10);
+    const userId = `USER#${uuid()}`;
+    const passwordHash = await bcrypt.hash(password, 10);
 
-        const newUser: Users = {
-            PK: userId,
-            SK: "METADATA",
-            username,
-            passwordHash,
-            accessLevel: "User",
-        };
+    const newUser: Users = {
+      PK: userId,
+      SK: "METADATA",
+      username,
+      passwordHash,
+      accessLevel: "User",
+    };
 
-        await db.send(
-            new PutCommand({
-                TableName: myTable,
-                Item: newUser,
-            })
-        );
-        const token = jwt.sign(
-            { userId, accessLevel: newUser.accessLevel },
-            JWT_SECRET,
-            { expiresIn: "7d"}
-        );
-        res.status(201).json({ userId, username, token});
-    }   catch(err) {
-        console.error("Error creating user:", err);
-        res.sendStatus(500);
-    }
+    await db.send(new PutCommand({ TableName: myTable, Item: newUser }));
+
+    const token = jwt.sign(
+      { userId, accessLevel: newUser.accessLevel },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(201).json({ userId, username, token });
+  } catch(err) {
+    console.error("Error creating user:", err);
+    res.sendStatus(500);
+  }
 });
 
+// ----- POST login (User/Admin) -----
+router.post('/users/login', async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Username and password required" });
+
+    const result = await db.send(new QueryCommand({
+      TableName: myTable,
+      IndexName: "username-index",
+      KeyConditionExpression: "#username = :username",
+      ExpressionAttributeNames: { "#username": "username" },
+      ExpressionAttributeValues: { ":username": username }
+    }));
+
+    const user = result.Items?.[0] as Users | undefined;
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (user.accessLevel !== "Guest" && !(await bcrypt.compare(password, user.passwordHash))) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    const token = jwt.sign(
+      { userId: user.PK, accessLevel: user.accessLevel },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(200).json({ userId: user.PK, username: user.username, token });
+  } catch(err) {
+    console.error("Error logging in:", err);
+    res.sendStatus(500);
+  }
+});
+
+// ----- DELETE user / Admin-delete -----
+router.delete('/users/me', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    console.log("Auth header:", authHeader);
+
+    if (!authHeader) return res.status(401).json({ error: "No token provided" });
+
+    const parts = authHeader.split(" ");
+    if (parts.length !== 2 || !parts[1]) return res.status(401).json({ error: "Malformed token" });
+
+    const token = parts[1];
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string, accessLevel: string };
+
+    const { userId: requesterId, accessLevel } = payload;
+    const targetUserId = req.query.userId as string || requesterId;
+
+    if (accessLevel !== "Admin" && targetUserId !== requesterId) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const targetUser = await db.send(new GetCommand({
+      TableName: myTable,
+      Key: { PK: targetUserId, SK: "METADATA" }
+    }));
+
+    if (!targetUser.Item) return res.status(404).json({ error: "User not found" });
+
+    await db.send(new DeleteCommand({ TableName: myTable, Key: { PK: targetUserId, SK: "METADATA" } }));
+
+    res.status(200).json({ message: `User ${targetUserId} deleted successfully` });
+
+  } catch(err) {
+    console.error("Error deleting user:", err);
+    res.sendStatus(500);
+  }
+});
 
 export default router;
+
