@@ -2,6 +2,8 @@ import express from "express"
 import cors from "cors"
 import type { Express, Request, Response, RequestHandler } from 'express'
 import usersRouter from './routes/users.js'
+import channelRouter from './routes/channels.js'
+import guestRouter from './routes/guest.js'
 
 
 const logger: RequestHandler = (req, res, next) => {
@@ -16,6 +18,8 @@ app.use("/", logger)
 app.use('/', cors())
 app.use('/', express.json())
 app.use( "/api", usersRouter)
+app.use("/api", channelRouter)
+app.use("/api", guestRouter)
 app.use(express.static('./dist/'))
 
 
