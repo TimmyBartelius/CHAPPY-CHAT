@@ -5,7 +5,7 @@ import { db } from "../data/dynamoDb.js";
 import { v4 as uuid } from "uuid";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import type { Users } from "../data/types.js";
+import type { User } from "../shared/types.js";
 
 const router: Router = express.Router();
 const myTable = "CHAPPY";
@@ -22,12 +22,13 @@ router.post("/register", async (req: Request, res: Response) => {
     const userId = `USER#${uuid()}`;
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const newUser: Users = {
+    const newUser: User = {
       PK: userId,
       SK: "METADATA",
       username,
       passwordHash,
       accessLevel: "User",
+      id: userId
     };
 
     await db.send(new PutCommand({ TableName: myTable, Item: newUser }));

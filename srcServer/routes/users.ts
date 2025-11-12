@@ -1,7 +1,7 @@
 import express from 'express';
 import type { Request, Response, Router } from 'express';
 import { GetCommand, ScanCommand, PutCommand, DeleteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
-import type { Users, Guest } from "../data/types.js";
+import type { User, Guest } from "../shared/types.js";
 import { db } from "../data/dynamoDb.js";
 import { v4 as uuid } from 'uuid';
 import jwt from "jsonwebtoken";
@@ -29,8 +29,9 @@ router.get('/users/admin', async (req: Request, res: Response) => {
       ExpressionAttributeValues: { ":Admin": "Admin" }
     }));
 
-    const users = (result.Items || []).map(item => item as Users);
-    res.send(users);
+    const users = (result.Items || []).map(item => ({
+      PK: item.PK, SK: item.SK, accessLevel: item.accessLevel, passwordHash: item.passwordHash || "", username: item.username, id: item.PK
+    }))
   } catch (err) {
     console.error("Error scanning admin users:", err);
     res.sendStatus(500);
@@ -38,22 +39,25 @@ router.get('/users/admin', async (req: Request, res: Response) => {
 });
 
 // ----- GET alla Users -----
-router.get('/users', async (req: Request, res: Response) => {
+router.get('/users', async (_req: Request, res: Response) => {
   try {
-    // FIX: Använder Scan med filter istället för username-index
     const result = await db.send(new ScanCommand({
       TableName: myTable,
-      FilterExpression: "accessLevel = :User",
-      ExpressionAttributeValues: { ":User": "User" }
+      FilterExpression: "begins_with(PK, :user) AND SK = :meta",
+      ExpressionAttributeValues: { ":user": "USER#", ":meta": "METADATA" }
     }));
 
-    const users = (result.Items || []).map(item => item as Users);
-    res.send(users);
+    const users = (result.Items || [])
+      .filter(item => item && item.PK && item.username)
+      .map(item => ({ id: item.PK, username: item.username }));
+
+    res.status(200).json(users);
   } catch (err) {
-    console.error("Error scanning users:", err);
+    console.error("Error fetching users:", err);
     res.sendStatus(500);
   }
 });
+
 
 // ----- GET alla Guests -----
 router.get('/users/guests', async (req: Request, res: Response) => {
@@ -87,7 +91,7 @@ router.get('/users/all', async (req: Request, res: Response) => {
       }
     }));
 
-    const users = (result.Items || []).map(item => item as Users | Guest);
+    const users = (result.Items || []).map(item => item as User | Guest);
     res.status(200).json(users);
 
   } catch (err) {
@@ -105,7 +109,8 @@ router.post('/users/guest', async (req: Request, res: Response) => {
     SK: "METADATA",
     username: `Guest-${Math.floor(Math.random() * 1234)}`,
     accessLevel: "Guest",
-    passwordHash: "", // Guest har inget lösenord
+    passwordHash: "",
+    id: userId // Guest har inget lösenord
   };
 
   await db.send(new PutCommand({ TableName: myTable, Item: guest }));

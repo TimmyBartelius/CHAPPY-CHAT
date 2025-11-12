@@ -1,16 +1,18 @@
-export interface Users{
+export interface User{
     PK: string,
     SK: string,
     accessLevel: string,
     passwordHash: string,
     username: string
+    id: string
 }
-export interface Channels{
+export interface Channel{
     PK: string,
     SK: string,
     creatorId: string,
     isLocked: boolean,
     name: string
+    id: string
 }
 
 export interface Guest{
@@ -19,4 +21,5 @@ export interface Guest{
     accessLevel: string,
     passwordHash: string,
     username: string
+    id: string
 }

@@ -1,0 +1,10 @@
+.window{
+    display: flex;
+    justify-content: center;
+}
+.channelName{
+    color:rgb(255, 255, 255);
+}
+.messages{
+    color: rgb(255, 255, 255);
+}

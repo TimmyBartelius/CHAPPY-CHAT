@@ -1,0 +1,19 @@
+.overhead-text{
+    color: rgb(255, 255, 255);
+}
+.confirm-password{
+    height: 30px;
+}
+.errMsg{
+    color:rgb(255, 0, 0);
+    font-size: 30px;
+}
+.submitBtn{
+    background-color: rgb(180, 178, 178);
+}
+.Acc{
+    color: rgb(255, 255, 255);
+}
+.loginBtn{
+    background-color:rgb(180, 178, 178);
+}

@@ -1,10 +1,10 @@
 import express, { Router } from "express";
-import type {Request, Response} from "express";
+import type { Request, Response } from "express";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { db } from "../data/dynamoDb.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import type { Users } from "../data/types.js";
+import type { User } from "../shared/types.js";
 
 const router: Router = express.Router();
 const myTable = "CHAPPY";
@@ -15,9 +15,13 @@ if (!JWT_SECRET) throw new Error("JWT_SECRET is not set in .env");
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
-    if (!username || !password)
-      return res.status(400).json({ error: "Username and password required" });
 
+    // Validera att båda fälten finns
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password required" });
+    }
+
+    // Hämta användare från DynamoDB
     const result = await db.send(
       new QueryCommand({
         TableName: myTable,
@@ -28,23 +32,38 @@ router.post("/login", async (req: Request, res: Response) => {
       })
     );
 
-    const user = result.Items?.[0] as Users | undefined;
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const user = result.Items?.[0] as User | undefined;
 
-    if (user.accessLevel !== "Guest" && !(await bcrypt.compare(password, user.passwordHash))) {
-      return res.status(401).json({ error: "Invalid password" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
+    // Kontrollera lösenord endast om det inte är en gäst
+    if (user.accessLevel !== "Guest") {
+      const passwordValid = await bcrypt.compare(password, user.passwordHash);
+      if (!passwordValid) {
+        return res.status(401).json({ error: "Invalid password" });
+      }
+    }
+
+    // Skapa JWT-token
     const token = jwt.sign(
       { userId: user.PK, accessLevel: user.accessLevel },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.status(200).json({ userId: user.PK, username: user.username, token });
+    // Skicka tillbaka användarinfo + token
+    res.status(200).json({
+      userId: user.PK,
+      username: user.username,
+      accessLevel: user.accessLevel,
+      token,
+    });
+
   } catch (err) {
     console.error("Error logging in:", err);
-    res.sendStatus(500);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

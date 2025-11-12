@@ -11,7 +11,7 @@ const StartPage: React.FC = () => {
     if (res.token) {
       localStorage.setItem("token", res.token);
       localStorage.setItem("username", res.username);
-      navigate("/channels"); // t.ex. en framtida sida
+      navigate("/channels");
     } else {
       alert("Kunde inte logga in som gäst");
     }

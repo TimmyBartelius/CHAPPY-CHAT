@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { register } from "../api/auth";
+import '../assets/RegisterPage.css';
 
 const RegisterPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -30,49 +31,49 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
-      <h1 className="text-3xl font-bold mb-6">Registrera konto</h1>
+    <div>
+      <h1 className="overhead-text">Registrera konto</h1>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
+      <form onSubmit={handleSubmit} className="form">
         <input
           type="text"
           placeholder="Användarnamn"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="p-3 rounded bg-gray-800 border border-gray-700"
+          className="username"
         />
         <input
           type="password"
           placeholder="Lösenord"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="p-3 rounded bg-gray-800 border border-gray-700"
+          className="password"
         />
         <input
           type="password"
           placeholder="Bekräfta lösenord"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="p-3 rounded bg-gray-800 border border-gray-700"
+          className="confirm-password"
         />
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {error && <p className="errMsg">{error}</p>}
 
         <button
           type="submit"
-          className="bg-green-600 hover:bg-green-700 py-2 rounded font-medium"
+          className="submitBtn"
         >
           Skapa konto
         </button>
       </form>
 
-      <p className="mt-4 text-sm">
+      <p className="Acc">
         Har du redan ett konto?{" "}
         <button
           onClick={() => navigate("/login")}
-          className="text-blue-400 hover:underline"
+          className="loginBtn"
         >
-          Logga in här
+          Logga in
         </button>
       </p>
     </div>

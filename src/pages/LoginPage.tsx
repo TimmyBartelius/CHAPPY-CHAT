@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../api/auth";
+import { login, guestLogin } from "../api/auth";
+import '../assets/LoginPage.css';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -8,62 +9,95 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  // ----- Hantera vanlig login -----
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    const res = await login(username, password);
+    // Validera tomma fält
+    if (!username || !password) {
+      setError("Ange både användarnamn och lösenord");
+      return;
+    }
 
-    if (res.token) {
-      localStorage.setItem("token", res.token);
-      localStorage.setItem("username", res.username);
-      navigate("/channels"); // Du kan ändra till din huvudvy
-    } else {
-      setError(res.error || "Fel användarnamn eller lösenord");
+    try {
+      const res = await login(username, password);
+
+      if (res.token) {
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("username", res.username);
+        localStorage.setItem("accessLevel", res.accessLevel);
+
+        navigate("/channels");
+      } 
+    } catch (err) {
+      setError("Något gick fel vid login");
+      console.error(err);
+    }
+  };
+
+  // ----- Hantera gäst-login -----
+  const handleGuestLogin = async () => {
+    setError("");
+    try {
+      const res = await guestLogin();
+      if (res.token) {
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("username", res.username);
+        localStorage.setItem("accessLevel", "Guest");
+
+        navigate("/channels");
+      } else {
+        setError(res.error || "Kunde inte logga in som gäst");
+      }
+    } catch (err) {
+      setError("Något gick fel vid gästlogin");
+      console.error(err);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
-      <h1 className="text-3xl font-bold mb-6">Logga in</h1>
+    <div className="login">
+      <h1 className="overhead-text">Logga in</h1>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
+      <form onSubmit={handleSubmit} className="form">
         <input
           type="text"
           placeholder="Användarnamn"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="p-3 rounded bg-gray-800 border border-gray-700"
+          className="username"
         />
         <input
           type="password"
           placeholder="Lösenord"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="p-3 rounded bg-gray-800 border border-gray-700"
+          className="password"
         />
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {error && <p className="errorMsg">{error}</p>}
 
-        <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700 py-2 rounded font-medium"
-        >
-          Logga in
-        </button>
+        <button type="submit" className="submitBtn">Logga in</button>
       </form>
 
-      <p className="mt-4 text-sm">
+      <div className="othBtns">
+      <button onClick={handleGuestLogin} className="guestBtn">
+        Logga in som gäst
+      </button>
+
+      <p className="noAcc">
         Har du inget konto?{" "}
         <button
           onClick={() => navigate("/register")}
-          className="text-blue-400 hover:underline"
-        >
+          className="registerBtn">
           Registrera dig här
         </button>
       </p>
+      </div>
     </div>
   );
 };
 
 export default LoginPage;
+

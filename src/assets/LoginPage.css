@@ -1,0 +1,65 @@
+body {
+    background-color: rgb(0, 0, 0);
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    justify-content: center;
+}
+.login{
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+.overhead-text{
+    text-align: center;
+    color:rgb(255, 255, 255);
+}
+.form{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.username{
+    height: 30px;
+}
+.password{
+    height: 30px;
+}
+.errorMsg{
+    color:rgb(255, 0, 0);
+    font-size: 50px;
+}
+.submitBtn{
+    height:40px;
+    border-radius: 10px;
+    background-color: rgb(11, 202, 11);
+    font-size: 20px;
+    border: 0;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+.noAcc{
+    display: flex;
+    color: rgb(255, 255, 255);
+    gap: 30px;
+}
+.registerBtn{
+    background-color: rgb(180, 178, 178);
+    font-size: 20px;
+    border: 0;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+.othBtns{
+    display: flex;
+    flex-direction: column; 
+}
+
+.submitBtn:hover{
+    background-color: rgb(6, 122, 6);
+}
+.submitBtn:active{
+    background-color: rgb(6, 122, 6);
+    transform: translateY(2px);
+    box-shadow: 0 2px #2e7d32
+}
+

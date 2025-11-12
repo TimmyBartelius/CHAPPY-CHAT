@@ -8,6 +8,9 @@ import jwt from 'jsonwebtoken';
 const router: Router = express.Router();
 const myTable = "CHAPPY";
 const JWT_SECRET = process.env.JWT_SECRET!;
+
+
+
  
 // --- Middleware: kontrollera token ---
 interface AuthPayload {
@@ -45,21 +48,33 @@ function authenticate(req: Request, res: Response, next: Function) {
 
 
 // ----- GET alla channels -----
+// backend/routes/channels.ts
 router.get('/channels', async (_req: Request, res: Response) => {
   try {
-    const result = await db.send(new ScanCommand({
-      TableName: myTable,
-      FilterExpression: "begins_with(PK, :chan) AND SK = :meta",
-      ExpressionAttributeValues: { ":chan": "CHANNEL#", ":meta":"METADATA" }
-    }));
+    const result = await db.send(new ScanCommand({ TableName: myTable }));
+    console.log("All items in table:", result.Items);
 
-    const channels = result.Items || [];
+    const channels = (result.Items || [])
+      .filter(item => item.SK === "METADATA" && item.name)
+      .map(item => ({
+        PK: item.PK,
+        SK: item.SK,
+        creatorId: item.creatorId || "unknown",
+        isLocked: item.isLocked ?? false,
+        name: item.name || item.channelName || "No name",
+        id: item.PK
+      }));
+
     res.status(200).json(channels);
   } catch (err) {
     console.error("Error fetching channels:", err);
     res.sendStatus(500);
   }
 });
+
+
+
+
 
 // ----- POST skapa channel (User/Admin) -----
 router.post('/channels', authenticate, async (req: Request, res: Response) => {
@@ -73,9 +88,10 @@ router.post('/channels', authenticate, async (req: Request, res: Response) => {
     const newChannel = {
       PK: channelId,
       SK: "METADATA",
-      channelName,
-      createdBy: userId,
-      createdAt: new Date().toISOString(),
+      creatorId: userId,
+      isLocked: false,
+      name: channelName,
+      id: channelId
     };
 
     await db.send(new PutCommand({ TableName: myTable, Item: newChannel }));
@@ -135,5 +151,7 @@ router.delete('/channels/:id', authenticate, async (req: Request, res: Response)
     res.sendStatus(500);
   }
 });
+
+
 
 export default router;
