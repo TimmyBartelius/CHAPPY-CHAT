@@ -4,6 +4,8 @@ import type { Express, Request, Response, RequestHandler } from 'express'
 import usersRouter from './routes/users.js'
 import channelRouter from './routes/channels.js'
 import guestRouter from './routes/guest.js'
+import registerRoute from './auth/register.js'
+import loginRoute from './auth/login.js'
 
 
 const logger: RequestHandler = (req, res, next) => {
@@ -17,6 +19,10 @@ const app = express()
 app.use("/", logger)
 app.use('/', cors())
 app.use('/', express.json())
+
+app.use("/api", registerRoute)
+app.use("/api", loginRoute)
+
 app.use( "/api", usersRouter)
 app.use("/api", channelRouter)
 app.use("/api", guestRouter)

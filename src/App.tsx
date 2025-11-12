@@ -1,16 +1,19 @@
-import { Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import StartPage from "./pages/StartPage";
+import LoginPage from "./pages/LoginPage"
+import RegisterPage from "./pages/RegisterPage"
 
 function App() {
   return (
     <>
-      <nav>
-        <Link to="/">Home</Link> | <Link to="/about">About</Link>
-      </nav>
-
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<h1>Start!</h1>} />
-        <Route path="/about" element={<h1>Om sidan</h1>} />
+        <Route path="/" element={<StartPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        
       </Routes>
+    </BrowserRouter>
     </>
   );
 }
