@@ -8,6 +8,9 @@ import registerRoute from './auth/register.js'
 import loginRoute from './auth/login.js'
 import messagesRouter from './routes/messages.js'
 
+import dotenv from "dotenv";
+dotenv.config();
+
 
 const logger: RequestHandler = (req, res, next) => {
   console.log(`${req.method} ${req.url}`)

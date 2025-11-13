@@ -47,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
       <ul className="channelList">
         {channels.map((chan) => (
           <li key={chan.id}>
-            <button onClick={() => onSelect(chan.id, chan.name, "channel")}>
+            <button className="chanBtns" onClick={() => onSelect(chan.id, chan.name, "channel")}>
               {chan.name}
             </button>
           </li>
@@ -57,8 +57,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
       <h2 className="users">Användare</h2>
       <ul className="userList">
         {users.map((user) => (
-          <li key={user.id}>
-            <button onClick={() => onSelect(user.id, user.username, "user")}>
+          <li className="userListLines" key={user.id}>
+            <button className="userBtns" onClick={() => onSelect(user.id, user.username, "user")}>
               {user.username}
             </button>
           </li>

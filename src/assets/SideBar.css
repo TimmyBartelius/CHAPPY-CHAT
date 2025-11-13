@@ -6,14 +6,36 @@
     width: 250px;
     padding: 1 rem;
     overflow-y: auto;
-    border-right: 1px solid green;
+    border-right: 1px solid rgb(0, 128, 0);
     color:rgb(255, 255, 255);
 }
 .users{
     color:rgb(255, 255, 255);
 }
 .channelList{
+    list-style: none;
+    padding:10px;
+    margin:10px;
+}
+.chanBtns{
+    font-size: 20px;
+    background-color: rgb(0, 255, 0);
+    border: 3px solid rgb(0, 0, 0);
+    border-radius: 10px;
+    cursor: pointer;
 }
 .userList{
-
+    list-style: none;
+    padding:10px;
+    margin:10px;
+}
+.userListLines{
+    padding:10px;
+}
+.userBtns{
+    font-size: 20px;
+    background-color: rgb(0, 180, 0);
+    border: 3px solid rgb(0, 0, 0);
+    border-radius:10px;
+    cursor: pointer;
 }

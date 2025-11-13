@@ -1,29 +1,41 @@
 import express, { Router } from "express";
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { v4 as uuid } from "uuid";
 import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { db } from "../data/dynamoDb.js";
+import jwt from "jsonwebtoken";
+import type { JwtPayload } from 'jsonwebtoken';
+
 
 const router: Router = express.Router();
 const myTable = "CHAPPY";
 
-// Middleware för att hämta user från token (samma som tidigare)
-function authenticate(req: Request, res: Response, next: Function) {
+
+function authenticate(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: "No token provided" });
 
-  const token = authHeader.split(" ")[1] as string;
+  const token = authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token provided" });
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    console.error("JWT_SECRET is not set!");
+    return res.status(500).json({ error: "Server misconfiguration" });
+  }
+
   try {
-    const decoded = require("jsonwebtoken").verify(token, process.env.JWT_SECRET!);
-    if (typeof decoded === "object" && decoded !== null && "userId" in decoded) {
-      (req as any).auth = decoded;
-      return next();
-    }
-    return res.status(401).json({ error: "Invalid token" });
-  } catch {
+    const decoded = jwt.verify(token, secret) as JwtPayload;
+    console.log("Decoded JWT:", decoded);
+
+    (req as any).auth = decoded;
+    next();
+  } catch (err) {
+    console.error("JWT verification failed:", err);
     return res.status(401).json({ error: "Invalid token" });
   }
 }
+
 
 // ----- POST nytt meddelande -----
 router.post("/:channelId", authenticate, async (req: Request, res: Response) => {

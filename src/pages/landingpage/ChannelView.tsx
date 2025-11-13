@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "../../assets/ChannelView.css";
 
 interface Message {
@@ -14,12 +14,21 @@ interface ChannelViewProps {
   channelName: string;
 }
 
+
+
 const ChannelView: React.FC<ChannelViewProps> = ({ channelId, channelName }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+const scrollToBottom = () => {
+  messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
+}
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
   const token = localStorage.getItem("token");
+
+  useEffect(()=> {
+  scrollToBottom();
+}, [messages]);
 
   // ---- Hämta alla meddelanden i kanalen ----
   const fetchMessages = async () => {
@@ -63,22 +72,22 @@ const ChannelView: React.FC<ChannelViewProps> = ({ channelId, channelName }) => 
   return (
     <div className="window">
       <h2 className="channelName">{channelName}</h2>
-
       <div className="messages">
         {messages.map((msg) => (
           <div key={msg.SK}>
             <b>{msg.senderId}:</b> {msg.content}
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
-      <input
+      <input className="input-window"
         type="text"
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
         placeholder="Skriv meddelande..."
       />
-      <button onClick={sendMessage}>Skicka</button>
+      <button className="sendBtn" onClick={sendMessage}>Skicka</button>
     </div>
   );
 };
