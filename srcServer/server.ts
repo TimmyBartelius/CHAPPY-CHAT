@@ -7,6 +7,7 @@ import guestRouter from './routes/guest.js'
 import registerRoute from './auth/register.js'
 import loginRoute from './auth/login.js'
 import messagesRouter from './routes/messages.js'
+import directMessagesRouter from './routes/directMessages.js'
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -31,6 +32,8 @@ app.use( "/api", usersRouter)
 app.use("/api", channelRouter)
 app.use("/api", guestRouter)
 app.use("/api/messages", messagesRouter)
+app.use("/api/dms", directMessagesRouter)
+
 app.use(express.static('./dist/'))
 
 

@@ -71,8 +71,8 @@ const scrollToBottom = () => {
 
   return (
     <div className="window">
-      <h2 className="channelName">{channelName}</h2>
-      <div className="messages">
+      <h2 className="channelName">Du är i kanalen; {channelName}</h2>
+      <div className="channelMessages">
         {messages.map((msg) => (
           <div key={msg.SK}>
             <b>{msg.senderId}:</b> {msg.content}

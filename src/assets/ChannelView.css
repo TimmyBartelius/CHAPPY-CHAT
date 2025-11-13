@@ -1,17 +1,19 @@
 .window{
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    align-items: center;
     gap: 30px;
+    background-color: rgb(255, 255, 255);
+    margin: 10px;
+    border: 10px solid rgb(0, 128, 0);
+    border-radius: 10px;
 }
 .channelName{
-    color:rgb(255, 255, 255);
+    color:rgb(0, 0, 0);
 }
-.messages{
-    height: 400px;
+.channelMessages{
     width: 600px;
-    overflow-y:auto;
-    border: 8px solid rgb(0, 128, 0);
+    border: 3px solid rgb(0, 128, 0);
     border-radius: 10px;
     padding: 20px;
     background-color: rgb(255, 255, 255);
@@ -23,6 +25,7 @@
     border: 3px solid rgb(0, 128, 0);
     border-radius: 10px;
     font-size: 20px;
+    margin: 10px;
 }
 .sendBtn{
     height: 70px;

@@ -1,26 +1,47 @@
+// pages/landingpage/channels.tsx
 import React, { useState } from "react";
 import Sidebar from "./SideBar";
 import ChannelView from "./ChannelView";
+import DirectMessageView from "./DirectMessageView";
 
-const ChannelsPage: React.FC = () => {
+interface ChannelsProps {
+  activeDM: { id: string; name: string } | null;
+  setActiveDM: React.Dispatch<React.SetStateAction<{ id: string; name: string } | null>>;
+}
+
+const ChannelsPage: React.FC<ChannelsProps> = ({ activeDM, setActiveDM }) => {
   const [selectedChannelId, setSelectedChannelId] = useState<string>("");
   const [selectedChannelName, setSelectedChannelName] = useState<string>("");
 
+  
   const handleSelect = (id: string, name: string, type: "channel" | "user") => {
     if (type === "channel") {
       setSelectedChannelId(id);
       setSelectedChannelName(name);
+      setActiveDM(null);
+    } else if (type === "user") {
+      setActiveDM({ id, name });
+      setSelectedChannelId("");
+      setSelectedChannelName("");
     }
   };
 
   return (
-    <div>
+    <div className="Sidebar">
       <Sidebar onSelect={handleSelect} />
-      <div style={{ marginLeft: "20px", flex: 1 }}>
-        {selectedChannelId ? (
-          <ChannelView channelId={selectedChannelId} channelName={selectedChannelName}/>
+      <div className="messages">
+        {activeDM ? (
+          <DirectMessageView 
+            recipientId={activeDM.id} 
+            recipientName={activeDM.name} 
+          />
+        ) : selectedChannelId ? (
+          <ChannelView 
+            channelId={selectedChannelId} 
+            channelName={selectedChannelName} 
+          />
         ) : (
-          <p>Välj en kanal för att se meddelanden</p>
+          <p>Välj en kanal eller användare för att se meddelanden</p>
         )}
       </div>
     </div>
@@ -28,4 +49,3 @@ const ChannelsPage: React.FC = () => {
 };
 
 export default ChannelsPage;
-

@@ -129,39 +129,33 @@ router.post('/users/guest', async (req: Request, res: Response) => {
 router.delete('/users/me', async (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization;
-    console.log("Auth header:", authHeader);
-
     if (!authHeader) return res.status(401).json({ error: "No token provided" });
-
     const parts = authHeader.split(" ");
+
     if (parts.length !== 2 || !parts[1]) return res.status(401).json({ error: "Malformed token" });
-
     const token = parts[1];
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: string, accessLevel: string };
-
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string; accessLevel: string };
     const { userId: requesterId, accessLevel } = payload;
     const targetUserId = req.query.userId as string || requesterId;
 
     if (accessLevel !== "Admin" && targetUserId !== requesterId) {
       return res.status(403).json({ error: "Unauthorized" });
     }
-
     const targetUser = await db.send(new GetCommand({
       TableName: myTable,
       Key: { PK: targetUserId, SK: "METADATA" }
     }));
-
+    
     if (!targetUser.Item) return res.status(404).json({ error: "User not found" });
-
     await db.send(new DeleteCommand({ TableName: myTable, Key: { PK: targetUserId, SK: "METADATA" } }));
-
     res.status(200).json({ message: `User ${targetUserId} deleted successfully` });
 
-  } catch(err) {
+  } catch (err) {
     console.error("Error deleting user:", err);
     res.sendStatus(500);
   }
 });
+
 
 export default router;
 
