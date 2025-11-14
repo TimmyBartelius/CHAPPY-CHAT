@@ -1,39 +1,78 @@
-.window{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 30px;
-    background-color: rgb(255, 255, 255);
-    margin: 10px;
-    border: 10px solid rgb(0, 128, 0);
-    border-radius: 10px;
+/* ChannelView.css */
+.channel-window {
+  display: flex;
+  flex-direction: column;
+  height: calc(90vh - 20px); 
+  gap: 10px;
+  padding: 10px;
+  background-color: #fff;
+  border: 3px solid rgb(0, 128, 0);
+  border-radius: 10px;
 }
-.channelName{
-    color:rgb(0, 0, 0);
+
+.channelName {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
 }
-.channelMessages{
-    width: 600px;
-    border: 3px solid rgb(0, 128, 0);
-    border-radius: 10px;
-    padding: 20px;
-    background-color: rgb(255, 255, 255);
-    color: rgb(0, 0, 0);
+
+.channelMessages {
+  flex: 1;                 
+  overflow-y: auto;
+  justify-items: end;
+  border: 2px solid rgb(0, 128, 0);
+  border-radius: 10px;
+  background-color: rgb(240, 240, 240);
 }
-.input-window{
-    height: 70px;
-    width: 650px;
-    border: 3px solid rgb(0, 128, 0);
-    border-radius: 10px;
-    font-size: 20px;
-    margin: 10px;
+.channel-message{
+  padding:10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgb(0, 0, 0);
 }
-.sendBtn{
-    height: 70px;
-    width: 660px;
-    border: 3px solid rgb(0, 128, 0);
-    border-radius: 10px;
-    cursor: pointer;
-    background-color: rgb(0, 128, 0);
-    color: rgb(255, 255, 255);
-    font-size: 30px;
+.message {
+  margin-bottom: 10px;
+}
+.channel-input-area{
+  display: flex;
+  flex-direction: row;
+  gap:10px;
+}
+.channel-input {
+  display: flex;
+  font-size: 20px;
+  width: 80%;
+}
+.channel-send-btn{
+  width: 130px;
+  height: 50px;
+  font-size: 20px;
+  color: rgb(255, 255, 255);
+  border: 1px solid rgb(255, 255, 255);
+  border-radius: 10px;
+  background-color: rgb(15, 179, 0);
+}
+.channel-send-btn:hover{
+  background-color: rgb(2, 88, 2);
+  cursor: pointer;
+}
+.input-window {
+  flex: 1;
+  padding: 10px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: 2px solid rgb(0, 128, 0);
+}
+
+.sendBtn {
+  padding: 10px 20px;
+  font-size: 18px;
+  border-radius: 6px;
+  background-color: rgb(0, 128, 0);
+  color: rgb(255, 255, 255);
+  border: none;
+  cursor: pointer;
+}
+
+.sendBtn:hover {
+  background-color: rgb(0, 100, 0);
 }

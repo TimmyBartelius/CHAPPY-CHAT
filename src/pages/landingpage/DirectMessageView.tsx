@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { jwtDecode } from "jwt-decode";
+import {jwtDecode} from "jwt-decode";
+import "../../assets/DirectMessageView.css"
 
 interface Message {
   PK: string;

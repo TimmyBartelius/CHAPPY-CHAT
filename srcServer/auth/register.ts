@@ -6,11 +6,15 @@ import { v4 as uuid } from "uuid";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import type { User } from "../shared/types.js";
+import dotenv from "dotenv"
+
+dotenv.config();
 
 const router: Router = express.Router();
 const myTable = "CHAPPY";
-const JWT_SECRET = process.env.JWT_SECRET!;
-if (!JWT_SECRET) throw new Error("JWT_SECRET is not set in .env");
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error("JWT_SECRET is missing in env");
 
 // ----- POST skapa User -----
 router.post("/register", async (req: Request, res: Response) => {
@@ -34,7 +38,7 @@ router.post("/register", async (req: Request, res: Response) => {
     await db.send(new PutCommand({ TableName: myTable, Item: newUser }));
 
     const token = jwt.sign(
-      { userId, accessLevel: newUser.accessLevel },
+      { userId: newUser.PK, accessLevel: newUser.accessLevel, username: newUser.username },
       JWT_SECRET,
       { expiresIn: "7d" }
     );

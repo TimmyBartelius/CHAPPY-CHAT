@@ -40,7 +40,7 @@ router.post("/:recipientId", authenticate, async (req: any, res) => {
       PK: `DM#${userA}#${userB}`,
       SK: messageId,
       content,
-      senderId: sender.userId,
+      senderName: sender.userId || sender.username,
       recipientId,
       createdAt: new Date().toISOString(),
     };
@@ -72,7 +72,10 @@ router.get("/:userId", authenticate, async (req: any, res) => {
       ScanIndexForward: true, 
     }));
 
-    res.status(200).json(result.Items || []);
+    res.status(200).json(result.Items?.map(item => ({
+      ...item,
+      senderName: item.senderName || item.senderId
+    })) || []);
   } catch (err) {
     console.error("Error fetching DMs:", err);
     res.sendStatus(500);

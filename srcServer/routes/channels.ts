@@ -9,8 +9,6 @@ const router: Router = express.Router();
 const myTable = "CHAPPY";
 const JWT_SECRET = process.env.JWT_SECRET!;
 
-
-
  
 // --- Middleware: kontrollera token ---
 interface AuthPayload {
@@ -73,9 +71,6 @@ router.get('/channels', async (_req: Request, res: Response) => {
 });
 
 
-
-
-
 // ----- POST skapa channel (User/Admin) -----
 router.post('/channels', authenticate, async (req: Request, res: Response) => {
   try {
@@ -107,7 +102,6 @@ router.post('/channels', authenticate, async (req: Request, res: Response) => {
 router.get('/channels/:id', async (req: Request, res: Response) => {
   try {
     const channelId = `CHANNEL#${req.params.id}`;
-
     const result = await db.send(new GetCommand({
       TableName: myTable,
       Key: { PK: channelId, SK: "METADATA" }

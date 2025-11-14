@@ -16,50 +16,56 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const token = localStorage.getItem("token");
 
+  // Hämta din egen användarroll
   useEffect(() => {
     if (token) {
       const decoded: any = jwtDecode(token);
-      setCurrentUserRole(decoded.accessLevel); 
+      setCurrentUserRole(decoded.accessLevel);
     }
   }, [token]);
 
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const fetchedChannels = await getChannels();
-      setChannels(fetchedChannels.filter(c => c.SK === "METADATA"));
-      const fetchedUsers = await getUsers();
-      const mappedUsers: User[] = fetchedUsers.map(u => ({
-        PK: u.id,
-        SK: "METADATA",
-        username: u.username,
-        accessLevel: u.accessLevel || "User",
-        passwordHash: u.passwordHash || "",
-        id: u.id,
-      }));
-      setUsers(mappedUsers);
-    } catch (err) {
-      console.error("Failed to fetch channels or users:", err);
-    }
-  };
-  fetchData();
-}, []);
+  // Hämta kanaler + users
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const fetchedChannels = await getChannels();
+        setChannels(fetchedChannels.filter((c) => c.SK === "METADATA"));
+
+        const fetchedUsers = await getUsers();
+        const mapped = fetchedUsers.map((u) => ({
+          PK: u.id,
+          SK: "METADATA",
+          username: u.username,
+          accessLevel: u.accessLevel || "User",
+          passwordHash: "",
+          id: u.id,
+        }));
+
+        setUsers(mapped);
+      } catch (err) {
+        console.error("Failed to load sidebar data:", err);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const handleDeleteUser = async (userPK: string) => {
-    if (!userPK) return alert("Ingen userId angiven!");
-    const actualId = userPK;
+    if (!userPK) return;
 
     try {
-      const res = await fetch(`${API_URL}/users/me?userId=${encodeURIComponent(actualId)}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `${API_URL}/users/me?userId=${encodeURIComponent(userPK)}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-      if (!res.ok) throw new Error("Kunde inte ta bort användaren!");
+      if (!res.ok) throw new Error("Kunde inte ta bort användare!");
+
+      setUsers((prev) => prev.filter((u) => u.PK !== userPK));
       alert("Användaren raderad!");
-      setUsers(prev => prev.filter(u => u.PK !== userPK));
     } catch (err) {
       console.error(err);
     }
@@ -69,11 +75,18 @@ useEffect(() => {
     <div className="SidebarOnly">
       <h2>Kanaler</h2>
       <ul className="channelList">
-        {channels.map(chan => (
+        {channels.map((chan) => (
           <li key={chan.PK}>
             <button
               className="chanBtns"
-              onClick={() => onSelect(chan.PK, chan.name, "channel")}
+              onClick={() => onSelect(
+                chan.PK?.toString().startsWith("CHANNEL#")
+                ? chan.PK.toString().replace("CHANNEL#", "")
+                : chan.PK,
+                chan.name,
+                "channel"
+              )
+            }
             >
               {chan.name}
             </button>
@@ -83,12 +96,15 @@ useEffect(() => {
 
       <h2 className="users">Användare</h2>
       <ul className="userList">
-        {users.map(user => (
+        {users.map((user) => (
           <li key={user.PK}>
             <button
-              className="userBtns" onClick={() => onSelect(user.id, user.username, "user")}>
-                {user.username}
-              </button>
+              className="userBtns"
+              onClick={() => onSelect(user.PK, user.username, "user")}
+            >
+              {user.username}
+            </button>
+
             {currentUserRole === "Admin" && (
               <button
                 className="deleteUserBtns"

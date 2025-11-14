@@ -1,6 +1,6 @@
 import express from "express"
 import cors from "cors"
-import type { Express, Request, Response, RequestHandler } from 'express'
+import type { Request, Response, RequestHandler } from 'express'
 import usersRouter from './routes/users.js'
 import channelRouter from './routes/channels.js'
 import guestRouter from './routes/guest.js'
@@ -8,10 +8,6 @@ import registerRoute from './auth/register.js'
 import loginRoute from './auth/login.js'
 import messagesRouter from './routes/messages.js'
 import directMessagesRouter from './routes/directMessages.js'
-
-import dotenv from "dotenv";
-dotenv.config();
-
 
 const logger: RequestHandler = (req, res, next) => {
   console.log(`${req.method} ${req.url}`)
