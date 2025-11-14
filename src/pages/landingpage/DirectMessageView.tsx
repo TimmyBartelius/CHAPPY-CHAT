@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import "../../assets/DirectMessageView.css"
+import { jwtDecode } from "jwt-decode";
 
 interface Message {
   PK: string;
@@ -18,30 +18,47 @@ interface DirectMessageViewProps {
 const DirectMessageView: React.FC<DirectMessageViewProps> = ({ recipientId, recipientName }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [senderId, setSenderId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
   const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    if (token) {
+      const decoded: any = jwtDecode(token);
+      setSenderId(decoded.userId);
+    }
+  }, [token]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const fetchMessages = async () => {
+    if (!senderId) return;
     try {
       const res = await fetch(`${API_URL}/dms/${recipientId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Kunde inte hämta DMs");
       const data = await res.json();
-      setMessages(data);
+      const sorted = data.sort(
+        (a: Message, b: Message) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      setMessages(sorted);
     } catch (err) {
       console.error(err);
     }
   };
 
+  
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
+    if (senderId === recipientId) {
+      alert("Du kan inte skicka meddelanden till dig själv!");
+      return;
+    }
+
     try {
       const res = await fetch(`${API_URL}/dms/${recipientId}`, {
         method: "POST",
@@ -61,8 +78,8 @@ const DirectMessageView: React.FC<DirectMessageViewProps> = ({ recipientId, reci
   };
 
   useEffect(() => {
-    fetchMessages();
-  }, [recipientId]);
+    if (senderId) fetchMessages();
+  }, [recipientId, senderId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -78,7 +95,7 @@ const DirectMessageView: React.FC<DirectMessageViewProps> = ({ recipientId, reci
         {messages.map((msg) => (
           <div
             key={msg.SK}
-            className={`dm-message ${msg.senderId === recipientId ? "incoming" : "outgoing"}`}
+            className={`dm-message ${msg.senderId === senderId ? "outgoing" : "incoming"}`}
           >
             <div className="dm-content">{msg.content}</div>
             <div className="dm-time">
@@ -89,16 +106,22 @@ const DirectMessageView: React.FC<DirectMessageViewProps> = ({ recipientId, reci
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="dm-input-area">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Skriv ett meddelande..."
-          className="dm-input"
-        />
-        <button onClick={sendMessage} className="dm-send-btn">Skicka</button>
-      </div>
+      {senderId !== recipientId ? (
+        <div className="dm-input-area">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Skriv ett meddelande..."
+            className="dm-input"
+          />
+          <button onClick={sendMessage} className="dm-send-btn">Skicka</button>
+        </div>
+      ) : (
+        <div className="dm-self-warning">
+          <p>Du kan inte chatta med dig själv.</p>
+        </div>
+      )}
     </div>
   );
 };

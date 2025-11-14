@@ -16,7 +16,7 @@ function authenticate(req: any, res: any, next: any) {
   const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    console.log("Decoded JWT:", decoded); // 🔹 Här kan du se vad token innehåller
+    console.log("Decoded JWT:", decoded); 
     req.auth = decoded;
     next();
   } catch (err) {
@@ -34,9 +34,7 @@ router.post("/:recipientId", authenticate, async (req: any, res) => {
 
     if (!content) return res.status(400).json({ error: "Message content required" });
 
-    // Sortera userId så att PK alltid blir densamma för två användare
     const [userA, userB] = [sender.userId, recipientId].sort();
-
     const messageId = `DM#${new Date().toISOString()}#${uuid()}`;
     const newMessage = {
       PK: `DM#${userA}#${userB}`,
@@ -61,8 +59,6 @@ router.get("/:userId", authenticate, async (req: any, res) => {
   try {
     const currentUser = req.auth.userId;
     const otherUser = req.params.userId;
-
-    // Sortera samma sätt som vid POST
     const [userA, userB] = [currentUser, otherUser].sort();
     const dmPK = `DM#${userA}#${userB}`;
 
@@ -73,7 +69,7 @@ router.get("/:userId", authenticate, async (req: any, res) => {
         ":pk": dmPK,
         ":msg": "DM#",
       },
-      ScanIndexForward: true, // äldsta först
+      ScanIndexForward: true, 
     }));
 
     res.status(200).json(result.Items || []);
