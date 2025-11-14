@@ -11,6 +11,7 @@ const StartPage: React.FC = () => {
     if (res.token) {
       localStorage.setItem("token", res.token);
       localStorage.setItem("username", res.username);
+      localStorage.setItem("accessLevel", "Guest");
       navigate("/channels");
     } else {
       alert("Kunde inte logga in som gäst");

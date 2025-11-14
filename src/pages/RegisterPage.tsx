@@ -19,14 +19,21 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
-    const res = await register(username, password);
+    try {
+      const res = await register(username, password);
 
-    if (res.token) {
-      localStorage.setItem("token", res.token);
-      localStorage.setItem("username", res.username);
-      navigate("/channels"); // eller din main-view
-    } else {
-      setError(res.error || "Något gick fel vid registrering");
+      if (res.token) {
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("username", res.username);
+        localStorage.setItem("accessLevel", res.accessLevel || "User");
+
+        navigate("/channels");
+      } else {
+        setError(res.error || "Något gick fel vid registrering");
+      }
+    } catch (err) {
+      console.error("Fel vid registrering:", err);
+      setError("Något gick fel vid registrering");
     }
   };
 
@@ -59,10 +66,7 @@ const RegisterPage: React.FC = () => {
 
         {error && <p className="errMsg">{error}</p>}
 
-        <button
-          type="submit"
-          className="submitBtn"
-        >
+        <button type="submit" className="submitBtn">
           Skapa konto
         </button>
       </form>

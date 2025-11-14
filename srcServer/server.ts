@@ -1,6 +1,7 @@
 import express from "express"
 import cors from "cors"
 import type { Request, Response, RequestHandler } from 'express'
+
 import usersRouter from './routes/users.js'
 import channelRouter from './routes/channels.js'
 import guestRouter from './routes/guest.js'
@@ -8,6 +9,7 @@ import registerRoute from './auth/register.js'
 import loginRoute from './auth/login.js'
 import messagesRouter from './routes/messages.js'
 import directMessagesRouter from './routes/directMessages.js'
+import channelMessagesRouter from './routes/channelMessages.js'
 
 const logger: RequestHandler = (req, res, next) => {
   console.log(`${req.method} ${req.url}`)
@@ -23,21 +25,18 @@ app.use('/', express.json())
 
 app.use("/api", registerRoute)
 app.use("/api/auth", loginRoute)
+app.use("/api/auth", guestRouter)
 
 app.use( "/api", usersRouter)
+
 app.use("/api", channelRouter)
-app.use("/api", guestRouter)
+
 app.use("/api/messages", messagesRouter)
 app.use("/api/dms", directMessagesRouter)
+app.use("/api/channelMessages", channelMessagesRouter)
 
 app.use(express.static('./dist/'))
 
-
-// GET /api/hello - Säg hej
-app.get("/api/hello", (req: Request, res: Response) => {
-  res.json({ message: "Servern säger hej!" });
+app.listen(port, ()=> {
+  console.log(`Server is currently running on http://localhost:${port}`);
 });
-// Se vilken port som används
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`)
-})

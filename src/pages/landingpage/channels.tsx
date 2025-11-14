@@ -15,20 +15,21 @@ const ChannelsPage: React.FC<ChannelsPageProps> = ({ activeDM, setActiveDM }) =>
   const [selectedChannelId, setSelectedChannelId] = useState("");
   const [selectedChannelName, setSelectedChannelName] = useState("");
   const [users, setUsers] = useState<User[]>([]);
+  const [isGuest, setIsGuest] = useState(false);
   const token = localStorage.getItem("token");
 
   // Hämta users EN gång
   useEffect(() => {
     const fetchUsers = async () => {
-      if (!token) return;
       try {
-        const res = await fetch(`${API_URL}/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const headers: any = token ? {Authorization: `Bearer ${token}`} : {};
+        const res = await fetch(`${API_URL}/users/all`, {headers});
 
         if (!res.ok) throw new Error("Kunde inte hämta users");
         const data: User[] = await res.json();
         setUsers(data);
+
+        if (!token) setIsGuest(true);
       } catch (err) {
         console.error("Fel vid hämtning av users:", err);
       }
@@ -63,6 +64,7 @@ const ChannelsPage: React.FC<ChannelsPageProps> = ({ activeDM, setActiveDM }) =>
             channelId={selectedChannelId}
             channelName={selectedChannelName}
             users={users}
+            isGuest={isGuest}
           />
         ) : (
           <p>Välj en kanal eller användare för att se meddelanden</p>

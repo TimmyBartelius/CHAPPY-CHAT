@@ -14,6 +14,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const token = localStorage.getItem("token");
 
   // Hämta din egen användarroll
@@ -21,6 +22,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
     if (token) {
       const decoded: any = jwtDecode(token);
       setCurrentUserRole(decoded.accessLevel);
+      if (decoded.accessLevel === "Guest") setIsGuest(true);
+    } else {
+      setIsGuest(true);
     }
   }, [token]);
 
@@ -28,10 +32,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const fetchedChannels = await getChannels();
+        const fetchedChannels = await getChannels(token || undefined);
         setChannels(fetchedChannels.filter((c) => c.SK === "METADATA"));
 
-        const fetchedUsers = await getUsers();
+        const fetchedUsers = await getUsers(token || undefined);
         const mapped = fetchedUsers.map((u) => ({
           PK: u.id,
           SK: "METADATA",
@@ -48,26 +52,70 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
     };
 
     loadData();
-  }, []);
+  }, [token]);
 
-  const handleDeleteUser = async (userPK: string) => {
-    if (!userPK) return;
+  //______________FUNKTIONEN FÖR ADMIN DELETE________________
+const handleDeleteUser = async (userPK: string, accessLevel: string) => {
+  if (!userPK) return;
 
-    try {
-      const res = await fetch(
-        `${API_URL}/users/me?userId=${encodeURIComponent(userPK)}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+  if(isGuest){
+    alert("Gäster kan inte ta bort användare!");
+    return;
+  }
 
-      if (!res.ok) throw new Error("Kunde inte ta bort användare!");
+  try {
+    let url = "";
+    let options: RequestInit = {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    };
 
-      setUsers((prev) => prev.filter((u) => u.PK !== userPK));
-      alert("Användaren raderad!");
-    } catch (err) {
+    if (accessLevel === "Admin") {
+      url = `${API_URL}/users/me?userId=${encodeURIComponent(userPK)}`;
+    } else {
+      url = `${API_URL}/users/self`;
+    }
+
+    const res = await fetch(url, options);
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Kunde inte ta bort användare!");
+    }
+
+    setUsers((prev) => prev.filter((u) => u.PK !== userPK));
+    alert("Användaren raderad!");
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
+  //Hämta inloggares ID
+  const getCurrentUserIdFromToken = () => {
+    if (!token) return null;
+    const decoded: any = jwtDecode(token);
+    return decoded.userId;
+  };
+
+  const handleDeleteMe = async () => {
+    if (!token || isGuest) {
+      alert("Gäster kan inte radera konto");
+      return;
+    }
+    try{
+      const res = await fetch(`${API_URL}/users/me`, {
+        method: "DELETE",
+        headers: {Authorization: `Bearer ${token}`},
+      });
+      if (!res.ok) throw new Error("Kunde inte ta bort kontot!");
+
+      alert("Ditt konto är raderat!");
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    } catch(err) {
       console.error(err);
+      alert("Kunde inte ta bort kontot");
     }
   };
 
@@ -101,19 +149,27 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
             <button
               className="userBtns"
               onClick={() => onSelect(user.PK, user.username, "user")}
+              disabled={isGuest}
             >
               {user.username}
             </button>
 
-            {currentUserRole === "Admin" && (
+            {currentUserRole === "Admin" && !isGuest && (
               <button
                 className="deleteUserBtns"
-                onClick={() => handleDeleteUser(user.PK)}
+                onClick={() => handleDeleteUser(user.PK, user.accessLevel)}
               >
                 Ta bort användare
               </button>
             )}
-          </li>
+            {user.PK === getCurrentUserIdFromToken() && !isGuest && (
+                          <button          
+                          className="deleteUserBtns"
+                          onClick={handleDeleteMe}>
+                            Radera mitt konto
+                            </button>
+                          )}
+                          </li>
         ))}
       </ul>
     </div>

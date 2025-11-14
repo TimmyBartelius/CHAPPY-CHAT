@@ -26,22 +26,21 @@ function authenticate(req: any, res: any, next: any) {
 }
 
 // ---- POST: Skicka DM till en användare ----
-router.post("/:recipientId", authenticate, async (req: any, res) => {
+router.post("/:dmPK", authenticate, async (req: any, res) => {
   try {
-    const { recipientId } = req.params;
-    const { content } = req.body;
+    const { dmPK } = req.params;
+    const { content, senderName } = req.body;
     const sender = req.auth;
 
     if (!content) return res.status(400).json({ error: "Message content required" });
 
-    const [userA, userB] = [sender.userId, recipientId].sort();
     const messageId = `DM#${new Date().toISOString()}#${uuid()}`;
     const newMessage = {
-      PK: `DM#${userA}#${userB}`,
+      PK: dmPK,
       SK: messageId,
       content,
-      senderName: sender.userId || sender.username,
-      recipientId,
+      senderId: sender.userId,
+      senderName: senderName || sender.username,
       createdAt: new Date().toISOString(),
     };
 
@@ -55,31 +54,32 @@ router.post("/:recipientId", authenticate, async (req: any, res) => {
 });
 
 // ---- GET: Hämta alla DMs mellan två användare ----
-router.get("/:userId", authenticate, async (req: any, res) => {
+router.get("/:dmPK", authenticate, async (req: any, res) => {
   try {
-    const currentUser = req.auth.userId;
-    const otherUser = req.params.userId;
-    const [userA, userB] = [currentUser, otherUser].sort();
-    const dmPK = `DM#${userA}#${userB}`;
+    const {dmPK} = req.params;
+    const result = await db.send(
+      new QueryCommand({
+        TableName: myTable,
+        KeyConditionExpression: "PK = :pk AND begins_with(SK, :msg)",
+        ExpressionAttributeValues: {
+          ":pk":dmPK,
+          ":msg":"DM#",
+        },
+        ScanIndexForward: true,
+      })
+    );
 
-    const result = await db.send(new QueryCommand({
-      TableName: myTable,
-      KeyConditionExpression: "PK = :pk AND begins_with(SK, :msg)",
-      ExpressionAttributeValues: {
-        ":pk": dmPK,
-        ":msg": "DM#",
-      },
-      ScanIndexForward: true, 
-    }));
-
-    res.status(200).json(result.Items?.map(item => ({
-      ...item,
-      senderName: item.senderName || item.senderId
-    })) || []);
-  } catch (err) {
+    res.status(200).json(
+      result.Items?.map((item) => ({
+        ...item,
+        senderName: item.senderName || item.senderId,
+      })) || []
+    );
+  } catch(err){
     console.error("Error fetching DMs:", err);
     res.sendStatus(500);
   }
 });
+
 
 export default router;

@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
-import {jwtDecode} from "jwt-decode";
-import "../../assets/DirectMessageView.css"
+import { jwtDecode } from "jwt-decode";
+import "../../assets/DirectMessageView.css";
 
 interface Message {
   PK: string;
   SK: string;
   content: string;
   senderId: string;
+  senderName: string;
   recipientId: string;
   createdAt: string;
 }
@@ -20,39 +21,54 @@ const DirectMessageView: React.FC<DirectMessageViewProps> = ({ recipientId, reci
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [senderId, setSenderId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
   const token = localStorage.getItem("token");
+  
+  const getDmPK = (userA: string, userB: string) => {
+    const [a, b] = [userA, userB].sort();
+    return `DM#${a}#${b}`;
+  }
 
+  // Hämta användarinfo från token
   useEffect(() => {
-    if (token) {
-      const decoded: any = jwtDecode(token);
-      setSenderId(decoded.userId);
-    }
+    if (!token) return;
+    const decoded: any = jwtDecode(token);
+    setSenderId(decoded.userId);
+    setCurrentUserName(decoded.username);
   }, [token]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Hämta meddelanden för DM mellan två användare
   const fetchMessages = async () => {
     if (!senderId) return;
-    try {
-      const res = await fetch(`${API_URL}/dms/${recipientId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+    const dmPK= getDmPK(senderId!, recipientId);
+    const res = await fetch(`${API_URL}/dms/${encodeURIComponent(dmPK)}`, {
+    headers: { Authorization: `Bearer ${token}` },
       });
+    try {
       if (!res.ok) throw new Error("Kunde inte hämta DMs");
       const data = await res.json();
-      const sorted = data.sort(
-        (a: Message, b: Message) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      );
+      const sorted = data
+        .map((msg: any) => ({
+          ...msg,
+          senderName: msg.senderName || msg.senderId 
+        }))
+        .sort(
+          (a: Message, b: Message) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+
       setMessages(sorted);
     } catch (err) {
       console.error(err);
     }
   };
 
-  
+  // Skicka nytt meddelande
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
     if (senderId === recipientId) {
@@ -61,16 +77,21 @@ const DirectMessageView: React.FC<DirectMessageViewProps> = ({ recipientId, reci
     }
 
     try {
-      const res = await fetch(`${API_URL}/dms/${recipientId}`, {
+      const dmPK = getDmPK(senderId!, recipientId);
+      const res = await fetch(`${API_URL}/dms/${encodeURIComponent(dmPK)}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ content: newMessage }),
+        body: JSON.stringify({ 
+          content: newMessage, 
+          senderName: currentUserName 
+        }),
       });
 
       if (!res.ok) throw new Error("Kunde inte skicka DM");
+
       setNewMessage("");
       fetchMessages();
     } catch (err) {
@@ -78,10 +99,12 @@ const DirectMessageView: React.FC<DirectMessageViewProps> = ({ recipientId, reci
     }
   };
 
+  // Uppdatera meddelanden när recipientId eller senderId ändras
   useEffect(() => {
     if (senderId) fetchMessages();
   }, [recipientId, senderId]);
 
+  // Scrolla automatiskt till botten när meddelanden uppdateras
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -96,8 +119,9 @@ const DirectMessageView: React.FC<DirectMessageViewProps> = ({ recipientId, reci
         {messages.map((msg) => (
           <div
             key={msg.SK}
-            className={`dm-message ${msg.senderId === senderId ? "outgoing" : "incoming"}`}
+            className={`dm-message ${msg.senderName === currentUserName ? "outgoing" : "incoming"}`}
           >
+            <div className="dm-sender">{msg.senderName}</div>
             <div className="dm-content">{msg.content}</div>
             <div className="dm-time">
               {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -128,3 +152,4 @@ const DirectMessageView: React.FC<DirectMessageViewProps> = ({ recipientId, reci
 };
 
 export default DirectMessageView;
+

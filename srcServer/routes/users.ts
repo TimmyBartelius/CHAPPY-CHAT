@@ -5,6 +5,8 @@ import type { User, Guest } from "../shared/types.js";
 import { db } from "../data/dynamoDb.js";
 import { v4 as uuid } from 'uuid';
 import jwt from "jsonwebtoken";
+import { authenticateJWT } from '../auth/authMiddleware.js';
+import type { AuthRequest } from '../auth/authMiddleware.js';
 import bcrypt from "bcrypt";
 
 if (!process.env.JWT_SECRET) {
@@ -101,6 +103,8 @@ router.get('/users/all', async (req: Request, res: Response) => {
 });
 
 
+
+
 // ----- POST skapa Guest -----
 router.post('/users/guest', async (req: Request, res: Response) => {
   const userId = `USER#${uuid()}`;
@@ -125,7 +129,7 @@ router.post('/users/guest', async (req: Request, res: Response) => {
 });
 
 
-// ----- DELETE user / Admin-delete -----
+// ----- DELETE Admin-delete -----
 router.delete('/users/me', async (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization;
@@ -156,6 +160,26 @@ router.delete('/users/me', async (req: Request, res: Response) => {
   }
 });
 
+// ----- DELETE /users/self -----
+router.delete('/users/self', authenticateJWT, async (req: AuthRequest, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    if (req.user.accessLevel === "Guest") {
+      return res.status(403).json({ error: "Guests cannot delete themselves" });
+    }
+
+    const userId = req.user.userId;
+    await db.send(new DeleteCommand({
+      TableName: myTable,
+      Key: { PK: userId, SK: "METADATA" },
+    }));
+
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting user:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 export default router;
 

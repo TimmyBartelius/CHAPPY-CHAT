@@ -1,73 +1,90 @@
-import express, {  Router } from "express";
-import type { Request, Response } from "express"
+import express, { Router } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { v4 as uuid } from "uuid";
 import jwt from "jsonwebtoken";
-import { ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { ScanCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { db } from "../data/dynamoDb.js";
 
-interface GuestPayload {
-  userId: string;
-  accessLevel: "Guest";
+// --- AuthRequest med valfri user ---
+export interface AuthRequest extends Request {
+  user?: { userId: string; username: string; accessLevel: string };
 }
 
 const router: Router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET!;
+
+// --- Säkerställ att JWT_SECRET finns ---
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not set in .env");
+}
+
 const myTable = "CHAPPY";
 
 // --- Middleware: guest eller logged-in ---
-export function authenticateOrGuest(req: Request, res: Response, next: Function) {
+function authenticateOrGuest(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    (req as any).auth = { userId: `GUEST#${uuid()}`, accessLevel: "Guest" };
+    // Guest utan token
+    req.user = { 
+      userId: `GUEST#${uuid()}`, 
+      username: `Guest-${Math.floor(Math.random() * 1000)}`,
+      accessLevel: "Guest"
+    };
     return next();
   }
 
-  const token = authHeader.slice("Bearer ".length);
+  const token = authHeader.split(" ")[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    if (
-      typeof decoded === "object" &&
-      decoded !== null &&
-      "userId" in decoded &&
-      "accessLevel" in decoded
-    ) {
-      (req as any).auth = decoded as GuestPayload;
-      return next();
-    }
-
-    return res.status(401).json({ error: "Invalid token payload" });
-  } catch {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    req.user = {
+      userId: decoded.userId,
+      username: decoded.username ?? "Guest",
+      accessLevel: decoded.accessLevel ?? "User"
+    };
+    next();
+  } catch (err) {
+    console.error("JWT Error:", err);
     return res.status(401).json({ error: "Invalid token" });
   }
 }
 
-// ----- POST skapa Guest-token -----
+// ----- POST skapa Guest-token och spara i DB -----
 router.post('/guest', async (req: Request, res: Response) => {
   try {
     const userId = `GUEST#${uuid()}`;
+    const username = `Guest-${Math.floor(Math.random() * 1000)}`;
 
-    const token = jwt.sign(
-      { userId, accessLevel: "Guest" },
-      JWT_SECRET,
-      { expiresIn: "12h" }
-    );
+    // Spara guest i DynamoDB
+    await db.send(new PutCommand({
+      TableName: myTable,
+      Item: {
+        PK: userId,
+        SK: "METADATA",
+        username,
+        accessLevel: "Guest",
+        passwordHash: "", // Guest har inget lösenord
+        id: userId
+      }
+    }));
 
-    res.status(201).json({ userId, username: `Guest-${Math.floor(Math.random() * 1000)}`, token });
+    // Skapa JWT-token
+    const token = jwt.sign({ userId, username, accessLevel: "Guest" }, JWT_SECRET, { expiresIn: "12h" });
+
+    res.status(201).json({ userId, username, accessLevel: "Guest", token });
   } catch (err) {
     console.error("Error creating guest token:", err);
     res.sendStatus(500);
   }
 });
 
-// ----- GET öppna kanaler -----
-router.get('/channels', authenticateOrGuest, async (req: Request, res: Response) => {
+// ----- GET öppna kanaler för guest -----
+router.get('/:channelId', authenticateOrGuest, async (req: AuthRequest, res: Response) => {
   try {
-    const user = (req as any).auth;
+    const user = req.user!;
     let filter = "begins_with(PK, :chan) AND SK = :meta";
     let values: any = { ":chan": "CHANNEL#", ":meta": "METADATA" };
 
-    // Guests ser endast öppna/public channels
     if (user.accessLevel === "Guest") {
       filter += " AND visibility = :public";
       values[":public"] = "public";
@@ -87,8 +104,9 @@ router.get('/channels', authenticateOrGuest, async (req: Request, res: Response)
 });
 
 // ----- GET specifik kanal -----
-router.get('/channels/:id', authenticateOrGuest, async (req: Request, res: Response) => {
+router.get('/channels/:id', authenticateOrGuest, async (req: AuthRequest, res: Response) => {
   try {
+    const user = req.user!;
     const channelId = `CHANNEL#${req.params.id}`;
     const result = await db.send(new ScanCommand({
       TableName: myTable,
@@ -99,7 +117,6 @@ router.get('/channels/:id', authenticateOrGuest, async (req: Request, res: Respo
     const channel = result.Items?.[0];
     if (!channel) return res.status(404).json({ error: "Channel not found" });
 
-    const user = (req as any).auth;
     if (channel.visibility === "private" && user.accessLevel === "Guest") {
       return res.status(403).json({ error: "This channel is private" });
     }
@@ -112,9 +129,8 @@ router.get('/channels/:id', authenticateOrGuest, async (req: Request, res: Respo
 });
 
 // ----- Blockera DM för Guests -----
-router.post('/dm/:toUserId', authenticateOrGuest, (req: Request, res: Response) => {
-  const user = (req as any).auth;
-
+router.post('/dm/:toUserId', authenticateOrGuest, (req: AuthRequest, res: Response) => {
+  const user = req.user!;
   if (user.accessLevel === "Guest") {
     return res.status(403).json({ error: "Guests cannot send DMs" });
   }

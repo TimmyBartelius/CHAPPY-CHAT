@@ -9,19 +9,20 @@ const normalizeChannelId = (id: string) =>
 interface Message {
   PK: string;
   SK: string;
-  content: string;
-  senderId: string;
-  senderName?: string;
-  createdAt: string;
+  text: string;
+  sender: {userId: string; username: string};
+  createdAt: number;
+  ttl?: number,
 }
 
 interface ChannelViewProps {
   channelId: string;
   channelName: string;
   users: User[];
+  isGuest?: boolean;
 }
 
-const ChannelView: React.FC<ChannelViewProps> = ({ channelId, channelName, users }) => {
+const ChannelView: React.FC<ChannelViewProps> = ({ channelId, channelName, users, isGuest }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -39,7 +40,7 @@ const ChannelView: React.FC<ChannelViewProps> = ({ channelId, channelName, users
   const fetchMessages = async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/messages/${normalizeChannelId(channelId)}`, {
+      const res = await fetch(`${API_URL}/channelMessages/${normalizeChannelId(channelId)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Kunde inte hämta meddelanden");
@@ -53,17 +54,17 @@ const ChannelView: React.FC<ChannelViewProps> = ({ channelId, channelName, users
   const sendMessage = async () => {
     if (!newMessage.trim() || !token) return;
     try {
-      const res = await fetch(`${API_URL}/messages/${channelId}`, {
+      const res = await fetch(`${API_URL}/channelMessages/${normalizeChannelId(channelId)}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ content: newMessage }),
+        body: JSON.stringify({ text: newMessage }),
       });
       if (!res.ok) throw new Error("Kunde inte skicka meddelande");
       setNewMessage("");
-      fetchMessages();
+      await fetchMessages();
     } catch (err) {
       console.error("Fel vid skickande av meddelande:", err);
     }
@@ -79,11 +80,10 @@ const ChannelView: React.FC<ChannelViewProps> = ({ channelId, channelName, users
 
       <div className="channelMessages">
         {messages.map((msg) => {
-          const sender = users.find((u) => u.PK === msg.senderId);
-          const senderName = sender?.username || msg.senderId;
+          const senderName = users.find(u => u.id === msg.sender?.userId)?.username || msg.sender?.username || msg.sender?.userId ||"Okänd";
           return (
             <div key={msg.SK} className="channel-message">
-              <b>{senderName}:</b> {msg.content}
+              <b>{senderName}:</b> {msg.text}
             </div>
           );
         })}
@@ -96,7 +96,8 @@ const ChannelView: React.FC<ChannelViewProps> = ({ channelId, channelName, users
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Skriv meddelande..."
+          placeholder={isGuest ? "Skriv meddelande (Guest)" : "Skriv meddelande..."}
+          disabled={false}
         />
         <button className="channel-send-btn" onClick={sendMessage}>
           Skicka
