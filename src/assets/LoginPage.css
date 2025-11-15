@@ -28,14 +28,13 @@ body {
     color:rgb(255, 0, 0);
     font-size: 50px;
 }
-.submitBtn{
+.submit-Btn{
     height:40px;
     border-radius: 10px;
-    background-color: rgb(11, 202, 11);
     font-size: 20px;
     border: 0;
     cursor: pointer;
-    transition: all 0.1s;
+    background-color: rgb(0, 255, 0);
 }
 .noAcc{
     display: flex;
@@ -43,7 +42,7 @@ body {
     gap: 30px;
 }
 .registerBtn{
-    background-color: rgb(180, 178, 178);
+    background-color: rgb(255, 255, 255);
     font-size: 20px;
     border: 0;
     cursor: pointer;
@@ -51,10 +50,10 @@ body {
 }
 .othBtns{
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
+    align-items: end;
 }
-
-.submitBtn:hover{
+.submit-Btn:hover{
     background-color: rgb(6, 122, 6);
 }
 .submitBtn:active{

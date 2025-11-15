@@ -78,7 +78,7 @@ const LoginPage: React.FC = () => {
 
         {error && <p className="errorMsg">{error}</p>}
 
-        <button type="submit" className="submitBtn">Logga in</button>
+        <button type="submit" className="submit-Btn">Logga in</button>
       </form>
 
       <div className="othBtns">

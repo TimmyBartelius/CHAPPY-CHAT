@@ -5,14 +5,12 @@ import jwt from "jsonwebtoken";
 import { ScanCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { db } from "../data/dynamoDb.js";
 
-// --- AuthRequest med valfri user ---
 export interface AuthRequest extends Request {
   user?: { userId: string; username: string; accessLevel: string };
 }
 
 const router: Router = express.Router();
 
-// --- Säkerställ att JWT_SECRET finns ---
 const JWT_SECRET = process.env.JWT_SECRET!;
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not set in .env");
@@ -20,12 +18,12 @@ if (!JWT_SECRET) {
 
 const myTable = "CHAPPY";
 
-// --- Middleware: guest eller logged-in ---
+// --- Middleware ---
 function authenticateOrGuest(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
+  // Om ingen token: skapa Guest user
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    // Guest utan token
     req.user = { 
       userId: `GUEST#${uuid()}`, 
       username: `Guest-${Math.floor(Math.random() * 1000)}`,
@@ -34,13 +32,16 @@ function authenticateOrGuest(req: AuthRequest, res: Response, next: NextFunction
     return next();
   }
 
+  // Token finns: verifiera JWT
   const token = authHeader.split(" ")[1];
   if (!token) {
-    return res.status(401).json({error: "Token missing"});
+    return res.status(401).json({ error: "Token missing" });
   }
-  let decoded;
+
   try {
-    decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; username: string; accessLevel: string };
+    req.user = decoded;  // ✅ Lägg till detta så att request fortsätter
+    next();
   } catch (err) {
     console.error("JWT Error:", err);
     return res.status(401).json({ error: "Invalid token" });
@@ -66,7 +67,6 @@ router.post('/guest', async (req: Request, res: Response) => {
       }
     }));
 
-   
     const token = jwt.sign({ userId, username, accessLevel: "Guest" }, JWT_SECRET, { expiresIn: "12h" });
 
     res.status(201).json({ userId, username, accessLevel: "Guest", token });
@@ -81,7 +81,7 @@ router.get('/:channelId', authenticateOrGuest, async (req: AuthRequest, res: Res
   try {
     const user = req.user!;
     let filter = "begins_with(PK, :chan) AND SK = :meta";
-    let values: any = { ":chan": "CHANNEL#", ":meta": "METADATA" };
+    const values: any = { ":chan": "CHANNEL#", ":meta": "METADATA" };
 
     if (user.accessLevel === "Guest") {
       filter += " AND visibility = :public";
@@ -106,6 +106,7 @@ router.get('/channels/:id', authenticateOrGuest, async (req: AuthRequest, res: R
   try {
     const user = req.user!;
     const channelId = `CHANNEL#${req.params.id}`;
+
     const result = await db.send(new ScanCommand({
       TableName: myTable,
       FilterExpression: "PK = :pk AND SK = :meta",

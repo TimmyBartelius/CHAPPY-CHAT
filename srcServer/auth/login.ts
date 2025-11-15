@@ -53,7 +53,6 @@ router.post("/login", async (req: Request, res: Response) => {
       { expiresIn: "7d" }
     );
 
-    // Skicka tillbaka användarinfo + token
     res.status(200).json({
       userId: user.PK,
       username: user.username,

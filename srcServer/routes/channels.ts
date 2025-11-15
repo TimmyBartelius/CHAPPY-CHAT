@@ -47,7 +47,6 @@ function authenticate(req: Request, res: Response, next: Function) {
 router.get('/channels', async (_req: Request, res: Response) => {
   try {
     const result = await db.send(new ScanCommand({ TableName: myTable }));
-    console.log("All items in table:", result.Items);
 
     const channels = (result.Items || [])
       .filter(item => item.SK === "METADATA" && item.name)
@@ -68,10 +67,11 @@ router.get('/channels', async (_req: Request, res: Response) => {
 });
 
 
+
 // ----- POST skapa channel (User/Admin) -----
 router.post('/channels', authenticate, async (req: Request, res: Response) => {
   try {
-    const { channelName } = req.body;
+    const { channelName, isLocked } = req.body;
     if (!channelName) return res.status(400).json({ error: "channelName required" });
 
     const { userId } = (req as any).auth;
@@ -81,7 +81,7 @@ router.post('/channels', authenticate, async (req: Request, res: Response) => {
       PK: channelId,
       SK: "METADATA",
       creatorId: userId,
-      isLocked: false,
+      isLocked: isLocked ?? false,
       name: channelName,
       id: channelId
     };
@@ -126,7 +126,7 @@ router.delete('/channels/:id', authenticate, async (req: Request, res: Response)
 
     if (!result.Item) return res.status(404).json({ error: "Channel not found" });
 
-    if (result.Item.createdBy !== userId && accessLevel !== "Admin") {
+    if (result.Item.creatorId !== userId && accessLevel !== "Admin") {
       return res.status(403).json({ error: "Not allowed to delete this channel" });
     }
 

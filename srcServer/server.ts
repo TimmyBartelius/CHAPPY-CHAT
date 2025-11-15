@@ -25,7 +25,7 @@ app.use('/', express.json())
 
 app.use("/api", registerRoute)
 app.use("/api/auth", loginRoute)
-app.use("/api/auth", guestRouter)
+app.use("/api/guest", guestRouter)
 
 app.use( "/api", usersRouter)
 
