@@ -1,73 +1,29 @@
-# React + TypeScript + Vite
+README.md: när du söker LIA och jobb kan de be dig visa ett projekt du har gjort - använd README.md för att berätta om projektet.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Detta är ett projekt som kan behöva finslipning - men för närvande fungerar det som såhär;
 
-Currently, two official plugins are available:
+1. Guests/Gäster
+En gäst kan logga in utan lösenord, ta sig till chatten och välja valfri öppen kanal att chatta i. Denne kan också logga ut - däremot kan hen inte skapa en kanal, ta bort en kanal, skriva DM's eller ta bort några användare överhuvudtaget. Däremot kan en gäst registrera sig för att kunna logga in som en användare.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+2. Users/Användare
+En användare kan logga in, det med hashat lösenord som är unikt för denne. Som användare kan du skapa en ny kanal, du kan göra den öppen eller privat och du kan också ta bort den helt. Du kan också som användare se andra användare och klicka på dem för att chatta med dem i DMs. Du kan också logga ut och logga in igen om du så önskar, samt ta bort ditt konto om du så vill.
 
-## React Compiler
+3. Admin
+Admin kan göra allt som en användare kan, plus att den inte begränsas. Den kan ta bort vilka kanaler den vill eller vilka användare denne vill, inklusive sig själv.
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+Vi kan alltså chatta med flera eller med en specifik användare.
+Jag använder mig av;
+DynamoDB -> för mitt Table i AWS
+Bcrypt -> kryptering
+Cors -> Resource Sharing
+Dotenv -> för min miljöfil .env
+Express -> webbramverk för Node.js - bygger webbserver och API
+jsonwebtoken -> verifiera tokens
+react -> grunden i koden
+vite -> grunden i koden
+Typescript -> täta eventuella fel
+uuid -> random generator för bland annat id
+zod -> validering
+Zustand -> statehantering
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Jag kan inte specificera exakt var jag använder vad just nu då min hjärna är lite välkokt - men utöver detta så funkar i vilket fall sidan.
