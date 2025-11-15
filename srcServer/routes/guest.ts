@@ -13,7 +13,7 @@ export interface AuthRequest extends Request {
 const router: Router = express.Router();
 
 // --- Säkerställ att JWT_SECRET finns ---
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET!;
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not set in .env");
 }
@@ -35,14 +35,12 @@ function authenticateOrGuest(req: AuthRequest, res: Response, next: NextFunction
   }
 
   const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({error: "Token missing"});
+  }
+  let decoded;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    req.user = {
-      userId: decoded.userId,
-      username: decoded.username ?? "Guest",
-      accessLevel: decoded.accessLevel ?? "User"
-    };
-    next();
+    decoded = jwt.verify(token, JWT_SECRET);
   } catch (err) {
     console.error("JWT Error:", err);
     return res.status(401).json({ error: "Invalid token" });
@@ -63,12 +61,12 @@ router.post('/guest', async (req: Request, res: Response) => {
         SK: "METADATA",
         username,
         accessLevel: "Guest",
-        passwordHash: "", // Guest har inget lösenord
+        passwordHash: "",
         id: userId
       }
     }));
 
-    // Skapa JWT-token
+   
     const token = jwt.sign({ userId, username, accessLevel: "Guest" }, JWT_SECRET, { expiresIn: "12h" });
 
     res.status(201).json({ userId, username, accessLevel: "Guest", token });

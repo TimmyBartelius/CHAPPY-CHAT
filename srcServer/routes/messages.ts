@@ -41,7 +41,7 @@ router.post("/:channelId", authenticate, async (req: AuthRequest, res: Response)
 
   const newMessage = {
     PK: `CHANNEL#${channelId}`,
-    SK: `MSG#${uuid()}`,
+    SK: `MSG#${Date.now()}#${uuid()}`,
     text,
     sender: {
       userId: req.user.userId,

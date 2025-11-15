@@ -25,8 +25,6 @@ function authenticate(req: Request, res: Response, next: Function) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Type guard
     if (
       typeof decoded === "object" &&
       decoded !== null &&
@@ -46,7 +44,6 @@ function authenticate(req: Request, res: Response, next: Function) {
 
 
 // ----- GET alla channels -----
-// backend/routes/channels.ts
 router.get('/channels', async (_req: Request, res: Response) => {
   try {
     const result = await db.send(new ScanCommand({ TableName: myTable }));

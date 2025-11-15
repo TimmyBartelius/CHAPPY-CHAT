@@ -25,8 +25,6 @@ function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
 
   try {
     const decoded = jwt.verify(token, secret) as any;
-
-    // Sätt user i requesten
     req.user = {
       userId: decoded.userId,
       username: decoded.username,
@@ -46,17 +44,17 @@ router.post("/:channelId", authenticate, async (req: AuthRequest, res: Response)
 
   if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-  // TTL 15 minuter
   const ttl = Math.floor(Date.now() / 1000) + 60 * 15;
+  const timestamp = Date.now().toString().padStart(13, "0") //fixad längd för timestamp
 
   const newMessage = {
-    PK: `CHANNEL#${channelId}`,          // Channel PK
-    SK: `MSG#${uuid()}`,                 // Unik meddelande-ID
+    PK: `CHANNEL#${channelId}`,
+    SK: `MSG#${timestamp}#${uuid()}`,
     text,
     sender: { 
       userId: req.user.userId ?? "guest", username: req.user.username ?? "Guest" }, 
     createdAt: Date.now(),
-    ttl,                                 
+    ttl,      
   };
 
   try {
@@ -83,7 +81,7 @@ router.get("/:channelId", authenticate, async (req: AuthRequest, res: Response) 
         ":pk": `CHANNEL#${channelId}`,
         ":msg": "MSG#",
       },
-      ScanIndexForward: true, // sorterar på SK = MSG#...
+      ScanIndexForward: true, 
     }));
 
     const messages = result.Items || [];

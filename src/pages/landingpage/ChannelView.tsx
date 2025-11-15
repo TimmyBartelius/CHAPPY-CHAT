@@ -45,7 +45,8 @@ const ChannelView: React.FC<ChannelViewProps> = ({ channelId, channelName, users
       });
       if (!res.ok) throw new Error("Kunde inte hämta meddelanden");
       const data: Message[] = await res.json();
-      setMessages(data);
+      const sorted = [...data].sort((a,b) => a.createdAt - b.createdAt);
+      setMessages(sorted);
     } catch (err) {
       console.error("Fel vid hämtning av meddelanden:", err);
     }
