@@ -40,7 +40,7 @@ function authenticateOrGuest(req: AuthRequest, res: Response, next: NextFunction
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; username: string; accessLevel: string };
-    req.user = decoded;  // ✅ Lägg till detta så att request fortsätter
+    req.user = decoded; 
     next();
   } catch (err) {
     console.error("JWT Error:", err);
