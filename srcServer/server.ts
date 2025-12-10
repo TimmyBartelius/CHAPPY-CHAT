@@ -16,7 +16,7 @@ const logger: RequestHandler = (req, res, next) => {
   next()
 }
 
-const port: number = Number(process.env.PORT)
+const port: number = Number(process.env.PORT) || 3000;
 const app = express()
 
 app.use("/", logger)
