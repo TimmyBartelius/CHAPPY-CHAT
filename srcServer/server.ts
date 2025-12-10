@@ -1,5 +1,6 @@
 import express from "express"
 import cors from "cors"
+import path from 'path';
 import type { Request, Response, RequestHandler } from 'express'
 
 import usersRouter from './routes/users.js'
@@ -34,8 +35,8 @@ app.use("/api/channelMessages", channelMessagesRouter)
 
 app.use(express.static('./dist/'))
 
-app.get('/*', (_req, res) => {
-  res.sendFile('index.html', { root: './dist'});  //Fallback om ingen route matchar så skickas index.html direkt
+app.get('*', (_req, res) => {
+  res.sendFile(path.resolve('dist/index.html'));  //Fallback om ingen route matchar så skickas index.html direkt
 })
 
 app.listen(port, ()=> {
