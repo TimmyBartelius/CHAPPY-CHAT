@@ -23,19 +23,20 @@ app.use("/", logger)
 app.use('/', cors())
 app.use('/', express.json())
 
-app.use("/api", registerRoute)
 app.use("/api/auth", loginRoute)
+app.use("/api", registerRoute)
 app.use("/api/guest", guestRouter)
-
 app.use( "/api", usersRouter)
-
 app.use("/api", channelRouter)
-
 app.use("/api/messages", messagesRouter)
 app.use("/api/dms", directMessagesRouter)
 app.use("/api/channelMessages", channelMessagesRouter)
 
 app.use(express.static('./dist/'))
+
+app.get('*', (_req, res) => {
+  res.sendFile('index.html', { root: './dist'});  //Fallback om ingen route matchar så skickas index.html direkt
+})
 
 app.listen(port, ()=> {
   console.log(`Server is currently running on http://localhost:${port}`);
