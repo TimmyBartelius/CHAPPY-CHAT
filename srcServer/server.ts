@@ -33,10 +33,10 @@ app.use("/api/messages", messagesRouter)
 app.use("/api/dms", directMessagesRouter)
 app.use("/api/channelMessages", channelMessagesRouter)
 
-app.use(express.static('./dist/'))
+app.use(express.static(path.join(process.cwd(),'./dist/')));
 
-app.get('/.*/', (_req, res) => {
-  res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));  //Fallback om ingen route matchar så skickas index.html direkt
+app.use((_req, res) => {
+  res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
 })
 
 app.listen(port, ()=> {
