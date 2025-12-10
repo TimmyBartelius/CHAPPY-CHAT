@@ -34,7 +34,7 @@ app.use("/api/channelMessages", channelMessagesRouter)
 
 app.use(express.static('./dist/'))
 
-app.get('*', (_req, res) => {
+app.get('/*', (_req, res) => {
   res.sendFile('index.html', { root: './dist'});  //Fallback om ingen route matchar så skickas index.html direkt
 })
 
