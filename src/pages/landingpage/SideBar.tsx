@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
     };
 
     loadData();
-  }, [token, isGuest]); // ✅ Lägg till isGuest så att filter uppdateras korrekt
+  }, [token, isGuest]);
 
   const getCurrentUserIdFromToken = () => {
     if (!token) return null;
